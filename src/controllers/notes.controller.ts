@@ -2,6 +2,7 @@ import { RequestHandler } from "express";
 import NoteModel from "../models/Note";
 import { CreateNoteBody } from "../interfaces/CreateNoteBody";
 import createHttpError from "http-errors";
+import mongoose from "mongoose";
 
 export const getNotes: RequestHandler = async (req, res, next) => {
     try {
@@ -15,6 +16,9 @@ export const getNotes: RequestHandler = async (req, res, next) => {
 export const getNoteById: RequestHandler = async (req, res, next) => {
     const noteId = req.params.noteId;
     try {
+        if (!mongoose.isValidObjectId(noteId)) {
+            throw createHttpError(400, 'Invalid note ID');
+        }
         if (!noteId) {
             throw createHttpError(404, 'Note not found');
         }
