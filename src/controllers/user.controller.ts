@@ -2,6 +2,7 @@ import { RequestHandler } from "express";
 import createHttpError from "http-errors";
 import { SignUpBody } from "../interfaces/SignUpBody";
 import UserModel from '../models/User';
+import bcrypt from 'bcrypt';
 
 
 export const signUp: RequestHandler<unknown, unknown, SignUpBody, unknown> = async (req, res, next) => {
@@ -25,8 +26,15 @@ export const signUp: RequestHandler<unknown, unknown, SignUpBody, unknown> = asy
             throw createHttpError(409, "A user with this email address already exists. Please log in instead.");
         }
 
+        const passwordHashed = await bcrypt.hash(passwordRaw, 10);
 
-        res.status(201);
+        const newUser = await UserModel.create({
+            username: username,
+            email: email,
+            password: passwordHashed,
+        });
+
+        res.status(201).json(newUser);
     } catch (error) {
         next(error);
     }
