@@ -2,7 +2,7 @@ import "dotenv/config";
 import express, { NextFunction, Request, Response } from "express";
 import morgan from 'morgan';
 import createHttpError, { isHttpError } from "http-errors";
-import notesRoutes from './routes/notes-routes';
+import notesRoutes from './routes/notes.routes';
 import userRoutes from "./routes/user.routes";
 import cors from 'cors';
 import session from "express-session";
