@@ -1,9 +1,23 @@
 import { RequestHandler } from "express";
 import createHttpError from "http-errors";
 import { SignUpBody } from "../interfaces/SignUpBody";
+import { LoginBody } from "../interfaces/LoginBody";
 import UserModel from '../models/User';
 import bcrypt from 'bcrypt';
 
+export const getAuthenticatedUser: RequestHandler = async (req, res, next) => {
+    const authenticatedUserId = req.session.userId;
+    try {
+        if (!authenticatedUserId) {
+            throw createHttpError(401, 'User not authenticated !');
+        }
+
+        const user = await UserModel.findById(authenticatedUserId).select("+email").exec();
+        res.status(200).json(user);
+    } catch (error) {
+        next(error);
+    }
+};
 
 export const signUp: RequestHandler<unknown, unknown, SignUpBody, unknown> = async (req, res, next) => {
     const { username, email } = req.body;
@@ -40,4 +54,40 @@ export const signUp: RequestHandler<unknown, unknown, SignUpBody, unknown> = asy
     } catch (error) {
         next(error);
     }
+};
+
+export const logIn: RequestHandler<unknown, unknown, LoginBody, unknown> = async (req, res, next) => {
+    const { username, password } = req.body;
+
+    try {
+        if (!username || !password) {
+            throw createHttpError(400, 'Parameters missing');
+        }
+        const user = await UserModel.findOne({ username: username }).select("+password +email").exec();
+
+        if (!user) {
+            throw createHttpError(401, "Invalid credentials");
+        }
+
+        const passwordMatch = await bcrypt.compare(password, user.password);
+
+        if (!passwordMatch) {
+            throw createHttpError(401, "Invalid credentials");
+        }
+
+        req.session.userId = user._id;
+        res.status(201).json(user);
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const logOut: RequestHandler = (req, res, next) => {
+    req.session.destroy(error => {
+        if (error) {
+            next(error);
+        } else {
+            res.sendStatus(200);
+        }
+    });
 };
