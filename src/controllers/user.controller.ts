@@ -55,20 +55,13 @@ export const logIn: RequestHandler<unknown, unknown, LoginBody, unknown> = async
     const { username, password } = req.body;
 
     try {
-        if (!username || !password) {
-            throw createHttpError(400, 'Parameters missing');
-        }
-        const user = await UserModel.findOne({ username: username }).select("+password +email").exec();
+        if (!username || !password) throw createHttpError(400, 'Parameters missing');
 
-        if (!user) {
-            throw createHttpError(401, "Invalid credentials");
-        }
+        const user = await authServices.getUser(username);
+        if (!user) throw createHttpError(401, "Invalid credentials");
 
         const passwordMatch = await bcrypt.compare(password, user.password);
-
-        if (!passwordMatch) {
-            throw createHttpError(401, "Invalid credentials");
-        }
+        if (!passwordMatch) throw createHttpError(401, "Invalid credentials");
 
         req.session.userId = user._id;
         res.status(201).json(user);

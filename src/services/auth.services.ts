@@ -17,24 +17,26 @@ const checkExistingEmail = async (email: string) => {
     return existingEmail;
 };
 
-
-
 const createUser = async ({ username, email, password }: CreateUser) => {
-    const hashedPassword = await bcrypt.hash(password, 10);
-
     const newUser = await UserModel.create({
         username: username,
         email: email,
-        password: hashedPassword
+        password: password
     });
 
     return newUser;
 };
 
+const getUser = async (username: string) => {
+    const user = await UserModel.findOne({ username: username }).select("+password +email").exec();
+    return user;
+};
+
 const authServices = {
     checkExistingUsername,
     checkExistingEmail,
-    createUser
+    createUser,
+    getUser
 };
 
 export default authServices;
