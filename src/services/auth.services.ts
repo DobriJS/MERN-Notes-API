@@ -1,11 +1,6 @@
 import UserModel from '../models/User';
-import bcrypt from 'bcrypt';
+import { CreateUser } from '../interfaces/CreateUser';
 
-interface CreateUser {
-    username: string,
-    email: string,
-    password: string,
-}
 
 const checkExistingUsername = async (username: string) => {
     const existingUsername = await UserModel.findOne({ username: username }).exec();

@@ -1,8 +1,6 @@
 import { RequestHandler } from "express";
-import NoteModel from "../models/Note";
 import { CreateNoteBody } from "../interfaces/CreateNoteBody";
 import createHttpError from "http-errors";
-import mongoose from "mongoose";
 import { UpdateNoteParams } from "../interfaces/UpdateNoteParams";
 import { UpdateNoteBody } from "../interfaces/UpdateNoteBody";
 import notesServices from "../services/notes.services";
@@ -22,6 +20,7 @@ export const getNoteById: RequestHandler = async (req, res, next) => {
     try {
         if (notesServices.isValidObjectId(noteId)) throw createHttpError(400, 'Invalid note ID');
         if (!noteId) throw createHttpError(404, 'Note not found');
+
         const note = await notesServices.getNoteById(noteId);
 
         res.status(200).json(note);
@@ -47,9 +46,10 @@ export const updateNote: RequestHandler<UpdateNoteParams, unknown, UpdateNoteBod
     const newTitle = req.body.title;
     const newText = req.body.text;
     try {
-        if (!mongoose.isValidObjectId(noteId)) throw createHttpError(400, 'Invalid note ID');
+        if (notesServices.isValidObjectId(noteId)) throw createHttpError(400, 'Invalid note ID');
         if (!newTitle) throw createHttpError(400, 'Note must have a title');
-        const note = await NoteModel.findById(noteId).exec();
+
+        const note = await notesServices.getNoteById(noteId);
         if (!note) throw createHttpError(404, 'Note not found');
         note.title = newTitle;
         note.text = newText;
@@ -64,8 +64,9 @@ export const updateNote: RequestHandler<UpdateNoteParams, unknown, UpdateNoteBod
 export const deleteNote: RequestHandler = async (req, res, next) => {
     const noteId = req.params.noteId;
     try {
-        if (!mongoose.isValidObjectId(noteId)) throw createHttpError(400, "Invalid note id");
-        const note = await NoteModel.findById(noteId).exec();
+        if (notesServices.isValidObjectId(noteId)) throw createHttpError(400, "Invalid note id");
+        const note = await notesServices.getNoteById(noteId);
+
         if (!note) throw createHttpError(404, "Note not found");
         await note.remove();
 
