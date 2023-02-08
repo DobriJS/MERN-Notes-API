@@ -7,7 +7,7 @@ import notesServices from "../services/notes.services";
 
 export const getNotes: RequestHandler = async (req, res, next) => {
     try {
-        const notes = notesServices.getNotes();
+        const notes = await notesServices.getNotes();
 
         res.status(200).json(notes);
     } catch (error) {
