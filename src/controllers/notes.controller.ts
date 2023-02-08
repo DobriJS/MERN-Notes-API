@@ -17,9 +17,13 @@ export const getNotes: RequestHandler = async (req, res, next) => {
 
 export const getNoteById: RequestHandler = async (req, res, next) => {
     const noteId = req.params.noteId;
+
     try {
-        if (notesServices.isValidObjectId(noteId)) throw createHttpError(400, 'Invalid note ID');
-        if (!noteId) throw createHttpError(404, 'Note not found');
+        if (notesServices.isValidObjectId(noteId))
+            throw createHttpError(400, 'Invalid note ID');
+
+        if (!noteId)
+            throw createHttpError(404, 'Note not found');
 
         const note = await notesServices.getNoteById(noteId);
 
@@ -31,8 +35,11 @@ export const getNoteById: RequestHandler = async (req, res, next) => {
 
 export const createNote: RequestHandler<unknown, unknown, CreateNoteBody, unknown> = async (req, res, next) => {
     const { title, text } = req.body;
+
     try {
-        if (!title) throw createHttpError(400, 'Note must have a title');
+        if (!title)
+            throw createHttpError(400, 'Note must have a title');
+
         const newNote = await notesServices.createNote(title, text);
 
         res.status(201).json(newNote);
@@ -45,14 +52,22 @@ export const updateNote: RequestHandler<UpdateNoteParams, unknown, UpdateNoteBod
     const noteId = req.params.noteId;
     const newTitle = req.body.title;
     const newText = req.body.text;
+
     try {
-        if (notesServices.isValidObjectId(noteId)) throw createHttpError(400, 'Invalid note ID');
-        if (!newTitle) throw createHttpError(400, 'Note must have a title');
+        if (notesServices.isValidObjectId(noteId))
+            throw createHttpError(400, 'Invalid note ID');
+
+        if (!newTitle)
+            throw createHttpError(400, 'Note must have a title');
 
         const note = await notesServices.getNoteById(noteId);
-        if (!note) throw createHttpError(404, 'Note not found');
+
+        if (!note)
+            throw createHttpError(404, 'Note not found');
+
         note.title = newTitle;
         note.text = newText;
+
         const updatedNote = await note.save();
 
         res.status(200).json(updatedNote);
@@ -63,11 +78,16 @@ export const updateNote: RequestHandler<UpdateNoteParams, unknown, UpdateNoteBod
 
 export const deleteNote: RequestHandler = async (req, res, next) => {
     const noteId = req.params.noteId;
+
     try {
-        if (notesServices.isValidObjectId(noteId)) throw createHttpError(400, "Invalid note id");
+        if (notesServices.isValidObjectId(noteId))
+            throw createHttpError(400, "Invalid note id");
+
         const note = await notesServices.getNoteById(noteId);
 
-        if (!note) throw createHttpError(404, "Note not found");
+        if (!note)
+            throw createHttpError(404, "Note not found");
+
         await note.remove();
 
         res.sendStatus(204);

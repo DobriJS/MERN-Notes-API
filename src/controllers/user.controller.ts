@@ -8,8 +8,11 @@ import authServices from "../services/auth.services";
 
 export const getAuthenticatedUser: RequestHandler = async (req, res, next) => {
     const authenticatedUserId = req.session.userId;
+
     try {
-        if (!authenticatedUserId) throw createHttpError(401, 'User not authenticated !');
+        if (!authenticatedUserId)
+            throw createHttpError(401, 'User not authenticated !');
+
         const user = await UserModel.findById(authenticatedUserId).select("+email").exec();
 
         res.status(200).json(user);
@@ -19,25 +22,21 @@ export const getAuthenticatedUser: RequestHandler = async (req, res, next) => {
 };
 
 export const signUp: RequestHandler<unknown, unknown, SignUpBody, unknown> = async (req, res, next) => {
-    const { username, email } = req.body;
-    const password = req.body.password;
+    const { username, email, password } = req.body;
 
     try {
-        if (!username || !email || !password) {
+        if (!username || !email || !password)
             throw createHttpError(400, "Parameters missing");
-        }
 
         const existingUsername = await authServices.checkExistingUsername(username);
 
-        if (existingUsername) {
+        if (existingUsername)
             throw createHttpError(409, "Username already taken. Please choose a different one or log in instead.");
-        }
 
         const existingEmail = await authServices.checkExistingEmail(email);
 
-        if (existingEmail) {
+        if (existingEmail)
             throw createHttpError(409, "A user with this email address already exists. Please log in instead.");
-        };
 
         const newUser = await authServices.createUser({ username, email, password });
 
@@ -53,13 +52,18 @@ export const logIn: RequestHandler<unknown, unknown, LoginBody, unknown> = async
     const { username, password } = req.body;
 
     try {
-        if (!username || !password) throw createHttpError(400, 'Parameters missing');
+        if (!username || !password)
+            throw createHttpError(400, 'Parameters missing');
 
         const user = await authServices.getUser(username);
-        if (!user) throw createHttpError(401, "Invalid credentials");
+
+        if (!user)
+            throw createHttpError(401, "Invalid credentials");
 
         const passwordMatch = await bcrypt.compare(password, user.password);
-        if (!passwordMatch) throw createHttpError(401, "Invalid credentials");
+
+        if (!passwordMatch)
+            throw createHttpError(401, "Invalid credentials");
 
         req.session.userId = user._id;
         res.status(201).json(user);
