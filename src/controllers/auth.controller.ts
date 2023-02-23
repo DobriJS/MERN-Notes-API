@@ -3,22 +3,31 @@ import createHttpError from "http-errors";
 import { SignUpBody } from "../interfaces/SignUpBody";
 import { LoginBody } from "../interfaces/LoginBody";
 import UserModel from '../models/User';
+import jwt, { Jwt, JwtPayload } from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
 import authServices from "../services/auth.services";
+import { generateJwt } from "../middlewares/jwtMethods";
+import env from "../util/validateEnv";
 
-export const getAuthenticatedUser: RequestHandler = async (req, res, next) => {
-    const authenticatedUserId = req.session.userId;
+export const getCurrentUser: RequestHandler = async (req, res, next) => {
+    const authHeader = req.header("Authorization");
+    const token = authHeader?.replace('Bearer ', '');
+    console.log(token);
+    if (!token)
+        throw createHttpError(404, 'Auth token was not found');
 
     try {
-        if (!authenticatedUserId)
-            throw createHttpError(401, 'User not authenticated !');
+        const token_info: Jwt | JwtPayload | string | any = jwt.verify(token, env.JWT_SECRET);
+        const user = await UserModel.findOne({ username: token_info.username });
 
-        const user = await UserModel.findById(authenticatedUserId).select("+email").exec();
+        if (!user)
+            throw createHttpError(400, 'User not found');
 
         res.status(200).json(user);
     } catch (error) {
         next(error);
     }
+
 };
 
 export const signUp: RequestHandler<unknown, unknown, SignUpBody, unknown> = async (req, res, next) => {
@@ -38,11 +47,15 @@ export const signUp: RequestHandler<unknown, unknown, SignUpBody, unknown> = asy
         if (existingEmail)
             throw createHttpError(409, "A user with this email address already exists. Please log in instead.");
 
-        const newUser = await authServices.createUser({ username, email, password });
+        const passwordHashed = await bcrypt.hash(password, 10);
 
-        req.session.userId = newUser._id;
+        const newUser = await UserModel.create({
+            username: username,
+            email: email,
+            password: passwordHashed,
+        });
 
-        res.status(201).json(newUser);
+        return res.status(201).json({ message: "succesful signup" });
     } catch (error) {
         next(error);
     }
@@ -55,7 +68,7 @@ export const logIn: RequestHandler<unknown, unknown, LoginBody, unknown> = async
         if (!username || !password)
             throw createHttpError(400, 'Parameters missing');
 
-        const user = await authServices.getUser(username);
+        const user = await UserModel.findOne({ username: username }).select("+password +email").exec();
 
         if (!user)
             throw createHttpError(401, "Invalid credentials");
@@ -65,19 +78,10 @@ export const logIn: RequestHandler<unknown, unknown, LoginBody, unknown> = async
         if (!passwordMatch)
             throw createHttpError(401, "Invalid credentials");
 
-        req.session.userId = user._id;
-        res.status(201).json(user);
+        const token = await generateJwt(user._id, user.username);
+
+        return res.status(200).json({ token });
     } catch (error) {
         next(error);
     }
-};
-
-export const logOut: RequestHandler = (req, res, next) => {
-    req.session.destroy(error => {
-        if (error) {
-            next(error);
-        } else {
-            res.sendStatus(200);
-        }
-    });
 };
