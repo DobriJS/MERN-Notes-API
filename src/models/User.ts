@@ -15,10 +15,6 @@ userSchema.pre('save', function (next) {
     });
 });
 
-userSchema.method('validatePassword', function (password) {
-    return bcrypt.compare(password, this.password);
-});
-
 type User = InferSchemaType<typeof userSchema>;
 
 export default model<User>("User", userSchema);
